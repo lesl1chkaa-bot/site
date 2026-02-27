@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Вордле</title>
+<link rel="icon" href="icon.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Russo+One&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#060d1f;
+    --surface:#0d1930;
+    --surface2:#152240;
+    --border:#1e3560;
+    --text:#ddeeff;
+    --muted:#5a7aaa;
+    --correct:#38bdf8;
+    --correct-text:#000;
+    --present:#f59e0b;
+    --absent:#152240;
+    --absent-text:#4a6a8a;
+    --key-bg:#1a2a40;
+    --key-text:#8aaacc;
+    --shadow:0 8px 40px rgba(0,0,0,.6);
+  }
+  body.light{
+    --bg:#f0f7ff;
+    --surface:#ffffff;
+    --surface2:#ddeeff;
+    --border:#b0d0f0;
+    --text:#0a1a33;
+    --muted:#5a8aaa;
+    --correct:#0284c7;
+    --correct-text:#fff;
+    --present:#d97706;
+    --absent:#ccdaee;
+    --absent-text:#8aaabb;
+    --key-bg:#ddeeff;
+    --key-text:#3a6a99;
+    --shadow:0 8px 40px rgba(0,60,150,.1);
+  }
+  body.custom{
+    --bg:#0a1a0a;
+    --surface:#111f11;
+    --surface2:#182818;
+    --border:#1e4020;
+    --text:#d0f0d0;
+    --muted:#4a8a5a;
+    --correct:#4ade80;
+    --correct-text:#000;
+    --present:#f59e0b;
+    --absent:#182818;
+    --absent-text:#2a6a3a;
+    --key-bg:#182818;
+    --key-text:#4a8a5a;
+    --shadow:0 8px 40px rgba(0,0,0,.5);
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:'Russo One',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;
+    transition:background .3s,color .3s;
+  }
+  body::before{
+    content:'';position:fixed;top:-20%;left:50%;transform:translateX(-50%);
+    width:700px;height:500px;
+    background:radial-gradient(circle,rgba(56,189,248,.06) 0%,transparent 70%);
+    pointer-events:none;
+  }
+  body.light::before{background:radial-gradient(circle,rgba(2,132,199,.05) 0%,transparent 70%)}
+  body.custom::before{background:radial-gradient(circle,rgba(74,222,128,.05) 0%,transparent 70%)}
+
+  /* HEADER */
+  header{
+    width:100%;padding:12px 20px;
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--border);
+    background:var(--surface);
+    position:sticky;top:0;z-index:99;
+    gap:10px;flex-wrap:wrap;
+  }
+  .logo{
+    display:flex;align-items:center;gap:10px;
+    font-family:'Unbounded',sans-serif;font-size:1.2rem;font-weight:900;letter-spacing:2px;
+  }
+  .logo img{width:36px;height:36px;border-radius:8px;border:2px solid var(--correct);object-fit:cover}
+  .logo span{color:var(--correct)}
+
+  .hcontrols{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+  .pg{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:3px;gap:2px}
+  .pg button{
+    padding:5px 11px;border:none;background:transparent;
+    color:var(--muted);font-family:'Russo One',sans-serif;font-size:.72rem;
+    border-radius:999px;cursor:pointer;transition:all .2s;white-space:nowrap;
+  }
+  .pg button:hover{color:var(--text)}
+  .pg button.on{background:var(--correct);color:var(--correct-text)}
+
+  .icon-btn{
+    width:32px;height:32px;border-radius:50%;
+    border:1px solid var(--border);background:var(--surface2);
+    color:var(--muted);font-size:.9rem;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:all .2s;
+  }
+  .icon-btn:hover{border-color:var(--correct);color:var(--correct)}
+
+  /* MODAL */
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;max-width:360px;width:90%;text-align:center}
+  .modal h2{font-family:'Unbounded',sans-serif;font-size:.95rem;margin-bottom:14px;color:var(--correct)}
+  .modal p{color:var(--muted);font-size:.82rem;line-height:1.8;font-family:sans-serif;margin-bottom:8px}
+  .legend{display:flex;gap:10px;justify-content:center;margin:14px 0}
+  .leg{text-align:center}
+  .leg-cell{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.95rem;font-weight:900;margin:0 auto 4px}
+  .leg small{color:var(--muted);font-size:.68rem;font-family:sans-serif}
+  .modal-close{margin-top:14px;padding:10px 28px;border:none;border-radius:10px;background:var(--correct);color:var(--correct-text);font-family:'Unbounded',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .2s}
+  .modal-close:hover{transform:translateY(-1px)}
+
+  /* BOARD */
+  #board{display:grid;grid-template-rows:repeat(6,1fr);gap:6px;padding:20px 0 14px;flex:1}
+  .row{display:flex;gap:6px}
+  .cell{
+    width:56px;height:56px;
+    border:2px solid var(--border);border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.45rem;font-weight:900;text-transform:uppercase;
+    transition:border-color .1s;
+  }
+  .cell.filled{border-color:var(--muted)}
+  .cell.correct{background:var(--correct);border-color:var(--correct);color:var(--correct-text);animation:flip .4s ease forwards}
+  .cell.present{background:var(--present);border-color:var(--present);color:#000;animation:flip .4s ease forwards}
+  .cell.absent{background:var(--absent);border-color:var(--absent);color:var(--absent-text);animation:flip .4s ease forwards}
+  .cell.pop{animation:pop .12s ease}
+  .cell.shake{animation:shake .4s ease}
+  .cell.jump{animation:jump .5s ease}
+
+  @keyframes flip{0%{transform:scaleY(1)}50%{transform:scaleY(0)}100%{transform:scaleY(1)}}
+  @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.13)}100%{transform:scale(1)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+  @keyframes jump{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+
+  /* TOAST */
+  #toast{position:fixed;top:72px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:9px 22px;border-radius:10px;font-family:'Unbounded',sans-serif;font-size:.75rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:100;white-space:nowrap}
+  #toast.show{opacity:1}
+
+  /* KEYBOARD */
+  #keyboard{padding:0 6px 20px;display:flex;flex-direction:column;gap:6px;align-items:center;width:100%;max-width:480px}
+  .kb-row{display:flex;gap:5px}
+  .key{
+    height:52px;min-width:34px;flex:1;
+    border-radius:8px;border:1px solid var(--border);
+    background:var(--key-bg);color:var(--key-text);
+    font-family:'Russo One',sans-serif;font-size:.82rem;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    padding:0 4px;transition:all .15s;
+  }
+  .key:hover{border-color:var(--muted)}
+  .key.wide{flex:1.7;font-size:.65rem}
+  .key.correct{background:var(--correct);color:var(--correct-text);border-color:var(--correct)}
+  .key.present{background:var(--present);color:#000;border-color:var(--present)}
+  .key.absent{background:var(--absent);color:var(--absent-text);border-color:var(--absent)}
+
+  /* WIN */
+  #winOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:150;align-items:center;justify-content:center}
+  #winOverlay.show{display:flex}
+  .win-box{background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:36px 28px;text-align:center;max-width:320px;width:90%}
+  .win-emoji{font-size:3.5rem;margin-bottom:10px}
+  .win-title{font-family:'Unbounded',sans-serif;font-size:1.2rem;margin-bottom:8px}
+  .win-word{color:var(--correct);font-size:1.1rem;letter-spacing:5px;margin-bottom:20px}
+  .win-btn{padding:13px 30px;border:none;border-radius:12px;background:var(--correct);color:var(--correct-text);font-family:'Unbounded',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .2s}
+  .win-btn:hover{transform:translateY(-2px)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <img src="icon.png" alt="" onerror="this.style.display='none'">
+    Ворд<span>ле</span>
+  </div>
+  <div class="hcontrols">
+    <!-- LANG -->
+    <div class="pg">
+      <button class="on" onclick="setLang('ru',this)">RU</button>
+      <button onclick="setLang('uk',this)">UK</button>
+      <button onclick="setLang('be',this)">BE</button>
+      <button onclick="setLang('en',this)">EN</button>
+      <button onclick="setLang('pl',this)">PL</button>
+    </div>
+    <!-- THEME -->
+    <div class="pg">
+      <button class="on" onclick="setTheme('dark',this)" id="t_dark">Тёмная</button>
+      <button onclick="setTheme('light',this)" id="t_light">Светлая</button>
+      <button onclick="setTheme('custom',this)" id="t_custom">Зелёная</button>
+    </div>
+    <button class="icon-btn" onclick="document.getElementById('helpModal').classList.add('show')">?</button>
+  </div>
+</header>
+
+<!-- HELP -->
+<div class="modal-bg" id="helpModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <h2 id="h_title">Как играть</h2>
+    <p id="h_desc">Угадай слово из 5 букв за 6 попыток.</p>
+    <div class="legend">
+      <div class="leg">
+        <div class="leg-cell" style="background:var(--correct);color:var(--correct-text)">К</div>
+        <small id="h_correct">Верная буква и место</small>
+      </div>
+      <div class="leg">
+        <div class="leg-cell" style="background:var(--present);color:#000">О</div>
+        <small id="h_present">Буква есть, не там</small>
+      </div>
+      <div class="leg">
+        <div class="leg-cell" style="background:var(--absent);color:var(--absent-text)">Т</div>
+        <small id="h_absent">Буквы нет</small>
+      </div>
+    </div>
+    <button class="modal-close" id="h_close" onclick="document.getElementById('helpModal').classList.remove('show')">Понятно!</button>
+  </div>
+</div>
+
+<!-- WIN -->
+<div id="winOverlay">
+  <div class="win-box">
+    <div class="win-emoji" id="winEmoji">🎉</div>
+    <div class="win-title" id="winTitle">Отлично!</div>
+    <div class="win-word" id="winWord"></div>
+    <button class="win-btn" id="w_new" onclick="newGame()">Новое слово</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="board"></div>
+<div id="keyboard"></div>
+
+<script>
+// ── TRANSLATIONS ───────────────────────────────────────
+const TR = {
+  ru:{
+    title:'Как играть', desc:'Угадай слово из 5 букв за 6 попыток.',
+    correct:'Верная буква и место', present:'Буква есть, не там', absent:'Буквы нет',
+    close:'Понятно!', newgame:'Новое слово',
+    td:'Тёмная', tl:'Светлая', tc:'Зелёная',
+    short:'Мало букв!', win:['Гениально!','Великолепно!','Отлично!','Хорошо!','Неплохо!','Уфф...'],
+    lose:'Слово было: ', next:'В следующий раз!',
+  },
+  uk:{
+    title:'Як грати', desc:'Вгадай слово з 5 літер за 6 спроб.',
+    correct:'Правильна буква і місце', present:'Буква є, не там', absent:'Букви немає',
+    close:'Зрозуміло!', newgame:'Нове слово',
+    td:'Темна', tl:'Світла', tc:'Зелена',
+    short:'Мало літер!', win:['Геніально!','Чудово!','Відмінно!','Добре!','Непогано!','Уфф...'],
+    lose:'Слово було: ', next:'Наступного разу!',
+  },
+  be:{
+    title:'Як гуляць', desc:'Адгадай слова з 5 літар за 6 спроб.',
+    correct:'Правільная літара і месца', present:'Літара ёсць, не там', absent:'Літары няма',
+    close:'Зразумела!', newgame:'Новае слова',
+    td:'Цёмная', tl:'Светлая', tc:'Зялёная',
+    short:'Мала літар!', win:['Геніяльна!','Выдатна!','Выдатна!','Добра!','Нядрэнна!','Уфф...'],
+    lose:'Слова было: ', next:'У наступны раз!',
+  },
+  en:{
+    title:'How to play', desc:'Guess the 5-letter word in 6 tries.',
+    correct:'Right letter, right place', present:'Letter in word, wrong place', absent:'Letter not in word',
+    close:'Got it!', newgame:'New word',
+    td:'Dark', tl:'Light', tc:'Green',
+    short:'Not enough letters!', win:['Genius!','Magnificent!','Excellent!','Good!','Not bad!','Phew...'],
+    lose:'The word was: ', next:'Better luck next time!',
+  },
+  pl:{
+    title:'Jak grać', desc:'Odgadnij słowo 5-literowe w 6 próbach.',
+    correct:'Dobra litera i miejsce', present:'Litera jest, złe miejsce', absent:'Brak litery',
+    close:'Rozumiem!', newgame:'Nowe słowo',
+    td:'Ciemny', tl:'Jasny', tc:'Zielony',
+    short:'Za mało liter!', win:['Genialne!','Wspaniale!','Świetnie!','Dobrze!','Nieźle!','Uff...'],
+    lose:'Słowo to było: ', next:'Następnym razem!',
+  },
+};
+
+// ── WORD LISTS ─────────────────────────────────────────
+const WORDS = {
+  ru:['КОШКА','СОБАК','ДОМИК','ЗЕМЛЯ','ВОЛНА','КНИГА','ШКОЛА','МЫШКА','ГОРОД','РЫБАК',
+      'ЛИМОН','БЕЛКА','ВИЛКА','ЛОЖКА','ВЕТЕР','ОГОНЬ','ПТИЦА','МАСЛО','САХАР','ПЕРЕЦ',
+      'ЯБЛОК','ГРУША','ЗАМОК','БЕРЕГ','ХОЛОД','ТЕПЛО','СМЕХУ','СЛОВО','БУКВА','ЦВЕТЫ',
+      'ЗВЕЗД','КОНЕЦ','МЕСТО','ПРАВО','ИГРОК','ВРЕМЯ','ХОЧЕТ','БЕЖИТ','ПЛЫТЬ','ПЕТУХ'],
+  uk:['КІШКА','СОБАК','БУДИН','ЗЕМЛЯ','ХВИЛЯ','КНИГА','ШКОЛА','МИШКА','МІСТО','РИБАК',
+      'ЛИМОН','БІЛКА','ВИЛКА','ЛОЖКА','ВІТЕР','ВОГОНЬ','ПТИЦЯ','МАСЛО','ЦУКОР','ПЕРЕЦЬ',
+      'ЯБЛУК','ГРУША','ЗАМОК','БЕРЕГ','ХОЛОД','ТЕПЛО','СМІХУ','СЛОВО','БУКВА','КВІТИ'],
+  be:['КОШКА','САБАК','ХАТКА','ЗЯМЛЯ','ХВАЛЯ','КНІГА','ШКОЛА','МЫШКА','ГОРАД','РЫБАК',
+      'ЛІМАН','ВАВЁР','ВІДЛА','ЛЫЖКА','ВЕЦЕР','АГОНЬ','ПТУШК','МАСЛА','ЦУКАР','ПЕРАЦ',
+      'ЯБЛЫК','ГРУША','ЗАМАК','БЕРАГ','ХОЛАД','ЦЯПЛО','СМЕХУ','СЛОВА','ЛІТАР','КВЕТК'],
+  en:['CRANE','SLATE','PLUMB','FJORD','GLYPH','TROVE','CRIMP','BLAZE','QUILT','FANCY',
+      'STOVE','CRYPT','DWARF','FLAKY','GNOME','HIPPO','IRONY','JAZZY','KNACK','LUMEN',
+      'MIRTH','NYMPH','OXIDE','PROXY','QUIRK','RHYME','SWIRL','TAXON','ULCER','VIVID',
+      'WALTZ','PIXEL','ZEBRA','TIGER','COUGH','PHONE','MOUSE','HAPPY','DANCE','MAGIC'],
+  pl:['ZAMEK','OKNIE','DOMEK','ZIEMI','FALKA','KSIĄŻ','SZKOŁ','MYSZA','MIAST','RYBAK',
+      'CYTRYN','WIEWR','WIDEL','ŁYŻKA','WIATR','OGIEŃ','PTAK','MASŁO','CUKIER','PIEPRZ',
+      'JABŁK','GRUSZ','ZAMEK','BRZEG','ZIMNO','CIEPŁO','ŚMIEC','SŁOWO','LITERA','KWIAT'],
+};
+
+// ── STATE ──────────────────────────────────────────────
+let lang = 'ru';
+let target = '';
+let currentRow = 0, currentCol = 0;
+let board = [], gameOver = false, keyState = {};
+
+const RU_LETTERS = 'ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮЁ';
+const EN_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const PL_LETTERS = 'AĄBCĆDEĘFGHIJKLŁMNŃOÓPRSŚTUWYZŹŻ';
+
+const KB = {
+  ru:[['Й','Ц','У','К','Е','Н','Г','Ш','Щ','З','Х'],['Ф','Ы','В','А','П','Р','О','Л','Д','Ж','Э'],['ENTER','Я','Ч','С','М','И','Т','Ь','Б','Ю','⌫']],
+  uk:[['Й','Ц','У','К','Е','Н','Г','Ш','Щ','З','Х'],['Ф','И','В','А','П','Р','О','Л','Д','Ж','Є'],['ENTER','Я','Ч','С','М','І','Т','Ь','Б','Ю','⌫']],
+  be:[['Й','Ц','У','К','Е','Н','Г','Ш','Ы','З','Х'],['Ф','І','В','А','П','Р','О','Л','Д','Ж','Э'],['ENTER','Я','Ч','С','М','Ц','Т','Ь','Б','Ю','⌫']],
+  en:[['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['ENTER','Z','X','C','V','B','N','M','⌫']],
+  pl:[['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['ENTER','Z','X','C','V','B','N','M','⌫']],
+};
+
+// ── LANG & THEME ───────────────────────────────────────
+function setLang(l, btn) {
+  lang = l;
+  btn.closest('.pg').querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderUI();
+  newGame();
+}
+
+function setTheme(theme, btn) {
+  document.body.className = theme==='dark' ? '' : theme;
+  btn.closest('.pg').querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function renderUI() {
+  const t = TR[lang];
+  document.getElementById('h_title').textContent = t.title;
+  document.getElementById('h_desc').textContent = t.desc;
+  document.getElementById('h_correct').textContent = t.correct;
+  document.getElementById('h_present').textContent = t.present;
+  document.getElementById('h_absent').textContent = t.absent;
+  document.getElementById('h_close').textContent = t.close;
+  document.getElementById('w_new').textContent = t.newgame;
+  document.getElementById('t_dark').textContent = t.td;
+  document.getElementById('t_light').textContent = t.tl;
+  document.getElementById('t_custom').textContent = t.tc;
+}
+
+// ── GAME ───────────────────────────────────────────────
+function newGame() {
+  const wlist = WORDS[lang] || WORDS.ru;
+  target = wlist[Math.floor(Math.random()*wlist.length)].toUpperCase();
+  currentRow = 0; currentCol = 0;
+  board = Array.from({length:6},()=>Array(5).fill(''));
+  gameOver = false; keyState = {};
+  document.getElementById('winOverlay').classList.remove('show');
+  buildBoard(); buildKeyboard();
+}
+
+function buildBoard() {
+  const el = document.getElementById('board');
+  el.innerHTML = '';
+  for(let r=0;r<6;r++){
+    const row = document.createElement('div');
+    row.className='row'; row.id='row-'+r;
+    for(let c=0;c<5;c++){
+      const cell = document.createElement('div');
+      cell.className='cell'; cell.id=`cell-${r}-${c}`;
+      row.appendChild(cell);
+    }
+    el.appendChild(row);
+  }
+}
+
+function buildKeyboard() {
+  const el = document.getElementById('keyboard');
+  el.innerHTML = '';
+  (KB[lang]||KB.ru).forEach(row=>{
+    const div = document.createElement('div');
+    div.className='kb-row';
+    row.forEach(k=>{
+      const btn = document.createElement('button');
+      btn.className='key'+(k==='ENTER'||k==='⌫'?' wide':'');
+      btn.textContent=k; btn.id='key-'+k;
+      btn.onclick=()=>handleKey(k);
+      div.appendChild(btn);
+    });
+    el.appendChild(div);
+  });
+}
+
+// ── INPUT ──────────────────────────────────────────────
+document.addEventListener('keydown', e=>{
+  if(e.ctrlKey||e.altKey||e.metaKey) return;
+  const k = e.key.toUpperCase();
+  if(k==='ENTER') handleKey('ENTER');
+  else if(k==='BACKSPACE') handleKey('⌫');
+  else if(k.length===1) handleKey(k);
+});
+
+function handleKey(k) {
+  if(gameOver) return;
+  if(k==='⌫') deleteLetter();
+  else if(k==='ENTER') submitRow();
+  else typeLetter(k);
+}
+
+function typeLetter(k) {
+  if(currentCol>=5) return;
+  board[currentRow][currentCol]=k;
+  const cell=document.getElementById(`cell-${currentRow}-${currentCol}`);
+  cell.textContent=k; cell.classList.add('filled','pop');
+  setTimeout(()=>cell.classList.remove('pop'),150);
+  currentCol++;
+}
+
+function deleteLetter() {
+  if(currentCol<=0) return;
+  currentCol--;
+  board[currentRow][currentCol]='';
+  const cell=document.getElementById(`cell-${currentRow}-${currentCol}`);
+  cell.textContent=''; cell.classList.remove('filled');
+}
+
+function submitRow() {
+  if(currentCol<5){ shakeRow(); toast(TR[lang].short); return; }
+  const guess=board[currentRow].join('');
+  const result=evaluate(guess,target);
+
+  result.forEach((state,c)=>{
+    setTimeout(()=>{
+      const cell=document.getElementById(`cell-${currentRow}-${c}`);
+      cell.classList.add(state);
+      const letter=board[currentRow][c];
+      const p={correct:3,present:2,absent:1};
+      if(!keyState[letter]||p[state]>p[keyState[letter]]){
+        keyState[letter]=state;
+        const key=document.getElementById('key-'+letter);
+        if(key){key.className='key';key.classList.add(state);}
+      }
+    }, c*120);
+  });
+
+  setTimeout(()=>{
+    if(guess===target){ gameOver=true; setTimeout(()=>showWin(currentRow+1),400); }
+    else if(currentRow===5){ gameOver=true; setTimeout(()=>showLose(),400); }
+    currentRow++; currentCol=0;
+  }, 5*120+200);
+}
+
+function evaluate(guess, target) {
+  const result=Array(5).fill('absent');
+  const tArr=target.split(''), gArr=guess.split('');
+  const tUsed=Array(5).fill(false), gUsed=Array(5).fill(false);
+  for(let i=0;i<5;i++) if(gArr[i]===tArr[i]){result[i]='correct';tUsed[i]=gUsed[i]=true;}
+  for(let i=0;i<5;i++){
+    if(gUsed[i]) continue;
+    for(let j=0;j<5;j++){
+      if(tUsed[j]) continue;
+      if(gArr[i]===tArr[j]){result[i]='present';tUsed[j]=true;break;}
+    }
+  }
+  return result;
+}
+
+function shakeRow() {
+  document.getElementById('row-'+currentRow).querySelectorAll('.cell').forEach(c=>{
+    c.classList.add('shake');
+    c.addEventListener('animationend',()=>c.classList.remove('shake'),{once:true});
+  });
+}
+
+let toastTimer;
+function toast(msg) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),1800);
+}
+
+const WIN_EMOJI=['🤯','🔥','🎉','👏','😅','😮‍💨'];
+function showWin(attempts) {
+  const t=TR[lang];
+  document.getElementById('winEmoji').textContent=WIN_EMOJI[attempts-1]||'🎉';
+  document.getElementById('winTitle').textContent=t.win[attempts-1]||t.win[2];
+  document.getElementById('winWord').textContent=target;
+  document.getElementById('winOverlay').classList.add('show');
+  for(let c=0;c<5;c++){
+    const cell=document.getElementById(`cell-${currentRow}-${c}`);
+    if(cell) setTimeout(()=>{cell.style.animation='none';void cell.offsetWidth;cell.style.animation=`jump .5s ease ${c*80}ms`;},200);
+  }
+}
+
+function showLose() {
+  const t=TR[lang];
+  toast(t.lose+target);
+  setTimeout(()=>{
+    document.getElementById('winEmoji').textContent='😔';
+    document.getElementById('winTitle').textContent=t.next;
+    document.getElementById('winWord').textContent=target;
+    document.getElementById('winOverlay').classList.add('show');
+  },2200);
+}
+
+// ── START ──────────────────────────────────────────────
+renderUI();
+newGame();
+</script>
+</body>
+</html>
